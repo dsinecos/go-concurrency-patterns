@@ -15,7 +15,7 @@ func Integer(max int) chan int {
 	return out
 }
 
-// OddInteger To fetch odd numbers equal to or less than 'max'
+// OddInteger TODO
 func OddInteger(input chan int) chan int {
 
 	out := make(chan int)
