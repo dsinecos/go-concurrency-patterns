@@ -16,16 +16,14 @@ func Integer(max int) chan int {
 }
 
 // OddInteger To fetch odd numbers equal to or less than 'max'
-func OddInteger(max int) chan int {
+func OddInteger(input chan int) chan int {
 
 	out := make(chan int)
 
 	go func() {
 		defer close(out)
 
-		intChan := Integer(max)
-
-		for integer := range intChan {
+		for integer := range input {
 			if integer%2 != 0 {
 				out <- integer
 			}
