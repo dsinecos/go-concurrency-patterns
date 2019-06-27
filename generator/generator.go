@@ -34,20 +34,20 @@ func OddInteger(input chan int) chan int {
 }
 
 // IsDivisibleBy TODO
-func IsDivisibleBy(max int, divisor int) chan int {
+func IsDivisibleBy(divisor int) func(chan int) chan int {
+	return func(input chan int) chan int {
+		out := make(chan int)
 
-	out := make(chan int)
+		go func() {
+			defer close(out)
 
-	go func() {
-		defer close(out)
-
-		for integer := range Integer(max) {
-			if integer%divisor == 0 {
-				out <- integer
+			for integer := range input {
+				if integer%divisor == 0 {
+					out <- integer
+				}
 			}
-		}
-	}()
+		}()
 
-	return out
-
+		return out
+	}
 }
