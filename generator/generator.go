@@ -1,7 +1,9 @@
 package generator
 
 // Integer TODO
-func Integer(max int, out chan<- int) {
+func Integer(max int) chan int {
+
+	out := make(chan int)
 
 	go func() {
 		defer close(out)
@@ -10,16 +12,18 @@ func Integer(max int, out chan<- int) {
 		}
 	}()
 
+	return out
 }
 
 // OddInteger To fetch odd numbers equal to or less than 'max'
-func OddInteger(max int, out chan<- int) {
+func OddInteger(max int) chan int {
 
-	intChan := make(chan int)
+	out := make(chan int)
 
 	go func() {
 		defer close(out)
-		Integer(max, intChan)
+
+		intChan := Integer(max)
 
 		for integer := range intChan {
 			if integer%2 != 0 {
@@ -28,22 +32,24 @@ func OddInteger(max int, out chan<- int) {
 		}
 	}()
 
+	return out
 }
 
 // IsDivisibleBy TODO
-func IsDivisibleBy(max int, out chan<- int, divisor int) {
+func IsDivisibleBy(max int, divisor int) chan int {
 
-	intChan := make(chan int)
+	out := make(chan int)
 
 	go func() {
 		defer close(out)
 
-		Integer(max, intChan)
-		for integer := range intChan {
+		for integer := range Integer(max) {
 			if integer%divisor == 0 {
 				out <- integer
 			}
 		}
 	}()
+
+	return out
 
 }
