@@ -12,7 +12,7 @@ func main() {
 	intChan := make(chan int)
 	const MAX = 10
 
-	generator.OddInteger(MAX, intChan)
+	generator.IsDivisibleBy(MAX, intChan, 3)
 
 	for integer := range intChan {
 		fmt.Println(integer)

@@ -29,3 +29,21 @@ func OddInteger(max int, out chan<- int) {
 	}()
 
 }
+
+// IsDivisibleBy TODO
+func IsDivisibleBy(max int, out chan<- int, divisor int) {
+
+	intChan := make(chan int)
+
+	go func() {
+		defer close(out)
+
+		Integer(max, intChan)
+		for integer := range intChan {
+			if integer%divisor == 0 {
+				out <- integer
+			}
+		}
+	}()
+
+}
