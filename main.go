@@ -12,7 +12,7 @@ func main() {
 	intChan := make(chan int)
 	const MAX = 10
 
-	generator.Integer(MAX, intChan)
+	generator.OddInteger(MAX, intChan)
 
 	for integer := range intChan {
 		fmt.Println(integer)
