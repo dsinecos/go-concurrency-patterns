@@ -8,14 +8,19 @@ import (
 )
 
 func main() {
-	const MAX = 30
+	const MAX = 10
 	isDivisibleByThree := g.IsDivisibleBy(3)
 	isDivisibleByFive := g.IsDivisibleBy(5)
 
-	integer3 := g.Integer(MAX)
-	integer5 := g.Integer(MAX)
+	integer3Input := make(chan int)
+	integer5Input := make(chan int)
 
-	isDivisibleByThreeOrFive := c.Merge(isDivisibleByThree(integer3), isDivisibleByFive(integer5))
+	c.Split(g.Integer(MAX), integer3Input, integer5Input)
+
+	// integer3 := g.Integer(MAX)
+	// integer5 := g.Integer(MAX)
+
+	isDivisibleByThreeOrFive := c.Merge(isDivisibleByThree(integer3Input), isDivisibleByFive(integer5Input))
 
 	fmt.Println("Printing integers divisible by 5 or 3")
 	for num := range isDivisibleByThreeOrFive {
