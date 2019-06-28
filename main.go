@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	c "github.com/dsinecos/go-generator/chanutil"
 	g "github.com/dsinecos/go-generator/generator"
 )
 
@@ -14,7 +15,7 @@ func main() {
 	integer3 := g.Integer(MAX)
 	integer5 := g.Integer(MAX)
 
-	isDivisibleByThreeOrFive := g.Merge(isDivisibleByThree(integer3), isDivisibleByFive(integer5))
+	isDivisibleByThreeOrFive := c.Merge(isDivisibleByThree(integer3), isDivisibleByFive(integer5))
 
 	fmt.Println("Printing integers divisible by 5 or 3")
 	for num := range isDivisibleByThreeOrFive {
