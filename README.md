@@ -8,6 +8,8 @@ To understand Golang's concurrent constructs (Goroutines, Channels etc) and diff
 2. Iterating over a channel using `range`
 
 3. Composing multiple goroutines as a pipeline
+   1. Closing multiple downstream channels when an upstream input channel is closed
+   2. Closing a single downstream channel when all the upstream input channels are closed
 
 4. Using `go run -race` to detect Race conditions
 
