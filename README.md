@@ -10,6 +10,7 @@ To understand Golang's concurrent constructs (Goroutines, Channels etc) and diff
 3. Composing multiple goroutines as a pipeline
    1. Closing multiple downstream channels when an upstream input channel is closed
    2. Closing a single downstream channel when all the upstream input channels are closed
+   3. Creating a Pipeline connected by channels where each filter is executed in a separate goroutine
 
 4. Using `go run -race` to detect Race conditions
 
