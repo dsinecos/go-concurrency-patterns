@@ -83,3 +83,27 @@ func Split(input chan int, outputs ...chan int) {
 
 	}()
 }
+
+// Pipeline TODO
+func Pipeline(input chan int, filters ...func(task int) bool) chan int {
+
+	out := make(chan int)
+
+	filter := filters[0]
+
+	go func(out chan int, filter func(task int) bool) {
+		defer close(out)
+		for value := range input {
+			if filter(value) {
+				out <- value
+			}
+		}
+	}(out, filter)
+
+	if len(filters) != 1 {
+		filters = filters[1:]
+		return Pipeline(out, filters...)
+	}
+
+	return out
+}

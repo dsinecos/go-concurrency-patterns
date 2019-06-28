@@ -8,23 +8,40 @@ import (
 )
 
 func main() {
-	const MAX = 10
-	isDivisibleByThree := g.IsDivisibleBy(3)
-	isDivisibleByFive := g.IsDivisibleBy(5)
+	const MAX = 100
 
-	integer3Input := make(chan int)
-	integer5Input := make(chan int)
+	generateInteger := g.Integer(MAX)
 
-	c.Split(g.Integer(MAX), integer3Input, integer5Input)
-
-	// integer3 := g.Integer(MAX)
-	// integer5 := g.Integer(MAX)
-
-	isDivisibleByThreeOrFive := c.Merge(isDivisibleByThree(integer3Input), isDivisibleByFive(integer5Input))
-
-	fmt.Println("Printing integers divisible by 5 or 3")
-	for num := range isDivisibleByThreeOrFive {
-		fmt.Println(num)
+	for value := range c.Pipeline(generateInteger, isDivisibleBy3, isDivisibleBy5, isEven) {
+		fmt.Println(value)
 	}
 
+}
+
+func isDivisibleBy3(task int) bool {
+	if task%3 == 0 {
+		return true
+	}
+
+	return false
+}
+
+func isDivisibleBy5(task int) bool {
+	if task%5 == 0 {
+		return true
+	}
+
+	return false
+}
+
+func isOdd(task int) bool {
+	if task%2 == 0 {
+		return false
+	}
+
+	return true
+}
+
+func isEven(task int) bool {
+	return !isOdd(task)
 }
