@@ -8,40 +8,19 @@ import (
 )
 
 func main() {
-	const MAX = 100
+	const MAX = 10
 
 	generateInteger := g.Integer(MAX)
 
-	for value := range c.Pipeline(generateInteger, isDivisibleBy3, isDivisibleBy5, isEven) {
-		fmt.Println(value)
+	output1 := make(chan int)
+	output2 := make(chan int)
+	output3 := make(chan int)
+
+	c.SplitRnd(generateInteger, output1, output2, output3)
+
+	output4 := c.Merge(output1, output2, output3)
+
+	for value := range output4 {
+		fmt.Println("Value ", value)
 	}
-
-}
-
-func isDivisibleBy3(task int) bool {
-	if task%3 == 0 {
-		return true
-	}
-
-	return false
-}
-
-func isDivisibleBy5(task int) bool {
-	if task%5 == 0 {
-		return true
-	}
-
-	return false
-}
-
-func isOdd(task int) bool {
-	if task%2 == 0 {
-		return false
-	}
-
-	return true
-}
-
-func isEven(task int) bool {
-	return !isOdd(task)
 }

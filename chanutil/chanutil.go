@@ -84,6 +84,24 @@ func Split(input chan int, outputs ...chan int) {
 	}()
 }
 
+// SplitRnd TODO
+func SplitRnd(input chan int, outputs ...chan int) {
+
+	for _, outputChan := range outputs {
+
+		go func(outputChan chan int) {
+
+			defer close(outputChan)
+
+			for num := range input {
+				outputChan <- num
+			}
+
+		}(outputChan)
+	}
+
+}
+
 // Pipeline TODO
 func Pipeline(input chan int, filters ...func(task int) bool) chan int {
 
