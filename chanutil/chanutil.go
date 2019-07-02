@@ -1,6 +1,9 @@
 package chanutil
 
-import "sync"
+import (
+	"reflect"
+	"sync"
+)
 
 // Merge TODO
 func Merge(input ...chan int) chan int {
@@ -122,6 +125,29 @@ func Pipeline(input chan int, filters ...func(task int) bool) chan int {
 		filters = filters[1:]
 		return Pipeline(out, filters...)
 	}
+
+	return out
+}
+
+/*
+OrShutdown combines multiple signalling channels and returns a
+single signalling channel (The output channel is closed if any
+of the input signalling channels is closed)
+*/
+func OrShutdown(inputs ...<-chan int) <-chan int {
+	out := make(chan int)
+
+	go func() {
+		defer close(out)
+
+		cases := make([]reflect.SelectCase, len(inputs))
+		for idx, inputChan := range inputs {
+			cases[idx] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(inputChan)}
+		}
+
+		reflect.Select(cases)
+
+	}()
 
 	return out
 }

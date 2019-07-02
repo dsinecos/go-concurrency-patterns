@@ -2,24 +2,47 @@ package main
 
 import (
 	"fmt"
+	"time"
 
-	g "github.com/dsinecos/go-generator/generator"
+	c "github.com/dsinecos/go-generator/chanutil"
 )
 
 func main() {
-	shutdown := make(chan int)
+	input1 := make(chan int)
+	input2 := make(chan int)
+	input3 := make(chan int)
 
-	inputInts := []int{1, 2, 3, 4, 5, 6}
+	shutdownChan := c.OrShutdown(input1, input2, input3)
 
-	for num := range g.BatchToStream(shutdown, inputInts) {
-		fmt.Println(num)
+	go func() {
+		time.Sleep(1 * time.Second)
+		close(input1)
+		fmt.Println("Closing inputChan1")
+	}()
+
+	go func() {
+		time.Sleep(2 * time.Second)
+		close(input2)
+		fmt.Println("Closing inputChan2")
+
+	}()
+
+	go func() {
+		time.Sleep(3 * time.Second)
+		close(input3)
+		fmt.Println("Closing inputChan3")
+
+	}()
+
+	start := time.Now()
+
+	select {
+	case <-shutdownChan:
+		fmt.Println("Shutdown Channel activated")
+		fmt.Println(time.Since(start))
 	}
 
-	inputChan := g.BatchToStream(shutdown, inputInts)
+	time.Sleep(5 * time.Second)
+	fmt.Println("Exiting main goroutine")
 
-	for i := 0; i < 3; i++ {
-		fmt.Println(<-inputChan)
-
-	}
-	close(shutdown)
 }
