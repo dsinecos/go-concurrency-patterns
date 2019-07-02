@@ -71,3 +71,26 @@ func Repeat(shutdown <-chan int, input int) <-chan int {
 
 	return out
 }
+
+// Take TODO
+func Take(shutdown <-chan int, input <-chan int, size int) <-chan int {
+
+	out := make(chan int)
+
+	go func() {
+		defer close(out)
+
+		for i := 0; i < size; i++ {
+			select {
+			case <-shutdown:
+				return
+			case num := <-input:
+				out <- num
+			}
+		}
+
+	}()
+
+	return out
+
+}

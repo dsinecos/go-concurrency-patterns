@@ -12,9 +12,10 @@ func main() {
 	repeatInt := 10
 
 	repeatChan := g.Repeat(shutdown, repeatInt)
+	takeChan := g.Take(shutdown, repeatChan, 4)
 
-	for i := 0; i < 4; i++ {
-		fmt.Println(<-repeatChan)
+	for value := range takeChan {
+		fmt.Println(value)
 	}
 	close(shutdown)
 }
