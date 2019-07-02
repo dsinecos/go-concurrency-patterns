@@ -94,3 +94,23 @@ func Take(shutdown <-chan int, input <-chan int, size int) <-chan int {
 	return out
 
 }
+
+// BatchToStream TODO
+func BatchToStream(shutdown <-chan int, inputs []int) <-chan int {
+	out := make(chan int)
+
+	go func() {
+		defer close(out)
+
+		for _, num := range inputs {
+			select {
+			case <-shutdown:
+				return
+			case out <- num:
+			}
+		}
+
+	}()
+
+	return out
+}

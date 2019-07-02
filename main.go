@@ -9,13 +9,17 @@ import (
 func main() {
 	shutdown := make(chan int)
 
-	repeatInt := 10
+	inputInts := []int{1, 2, 3, 4, 5, 6}
 
-	repeatChan := g.Repeat(shutdown, repeatInt)
-	takeChan := g.Take(shutdown, repeatChan, 4)
+	for num := range g.BatchToStream(shutdown, inputInts) {
+		fmt.Println(num)
+	}
 
-	for value := range takeChan {
-		fmt.Println(value)
+	inputChan := g.BatchToStream(shutdown, inputInts)
+
+	for i := 0; i < 3; i++ {
+		fmt.Println(<-inputChan)
+
 	}
 	close(shutdown)
 }
