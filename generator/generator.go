@@ -51,3 +51,23 @@ func IsDivisibleBy(divisor int) func(chan int) chan int {
 		return out
 	}
 }
+
+// Repeat TODO
+func Repeat(shutdown <-chan int, input int) <-chan int {
+	out := make(chan int)
+
+	go func() {
+		defer close(out)
+
+		for {
+			select {
+			case <-shutdown:
+				return
+			case out <- input:
+			}
+		}
+
+	}()
+
+	return out
+}

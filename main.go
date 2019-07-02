@@ -3,24 +3,18 @@ package main
 import (
 	"fmt"
 
-	c "github.com/dsinecos/go-generator/chanutil"
 	g "github.com/dsinecos/go-generator/generator"
 )
 
 func main() {
-	const MAX = 10
+	shutdown := make(chan int)
 
-	generateInteger := g.Integer(MAX)
+	repeatInt := 10
 
-	output1 := make(chan int)
-	output2 := make(chan int)
-	output3 := make(chan int)
+	repeatChan := g.Repeat(shutdown, repeatInt)
 
-	c.SplitRnd(generateInteger, output1, output2, output3)
-
-	output4 := c.Merge(output1, output2, output3)
-
-	for value := range output4 {
-		fmt.Println("Value ", value)
+	for i := 0; i < 4; i++ {
+		fmt.Println(<-repeatChan)
 	}
+	close(shutdown)
 }
