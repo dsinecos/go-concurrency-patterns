@@ -1,6 +1,7 @@
 package chanutil
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -148,6 +149,55 @@ func OrShutdown(inputs ...<-chan int) <-chan int {
 		reflect.Select(cases)
 
 	}()
+
+	return out
+}
+
+/*
+Pool TODO
+*/
+func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int) int) <-chan int {
+	out := make(chan int)
+
+	var syncGoroutine sync.WaitGroup
+
+	for i := 0; i < poolSize; i++ {
+
+		syncGoroutine.Add(1)
+
+		go func(shutdown <-chan int, inputChan <-chan int, wg *sync.WaitGroup) {
+
+			fmt.Println("Goroutine started")
+
+			defer wg.Done()
+			defer fmt.Println("Closing Pool goroutine")
+
+			for {
+				select {
+				case <-shutdown:
+					return
+				case num, ok := <-inputChan:
+					if !ok {
+						fmt.Println("Closing because inputChan closed")
+						return
+					}
+					select {
+					case <-shutdown:
+						return
+					case out <- process(num):
+					}
+				}
+			}
+
+		}(shutdown, input, &syncGoroutine)
+
+	}
+
+	go func(wg *sync.WaitGroup) {
+		defer fmt.Println("Closing monitoring goroutine")
+		syncGoroutine.Wait()
+		close(out)
+	}(&syncGoroutine)
 
 	return out
 }
