@@ -1,7 +1,6 @@
 package chanutil
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 )
@@ -166,11 +165,7 @@ func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int)
 		syncGoroutine.Add(1)
 
 		go func(shutdown <-chan int, inputChan <-chan int, wg *sync.WaitGroup) {
-
-			fmt.Println("Goroutine started")
-
 			defer wg.Done()
-			defer fmt.Println("Closing Pool goroutine")
 
 			for {
 				select {
@@ -178,7 +173,6 @@ func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int)
 					return
 				case num, ok := <-inputChan:
 					if !ok {
-						fmt.Println("Closing because inputChan closed")
 						return
 					}
 					select {
@@ -194,7 +188,6 @@ func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int)
 	}
 
 	go func(wg *sync.WaitGroup) {
-		defer fmt.Println("Closing monitoring goroutine")
 		syncGoroutine.Wait()
 		close(out)
 	}(&syncGoroutine)
