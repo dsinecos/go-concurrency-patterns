@@ -1,5 +1,7 @@
 package generator
 
+import "fmt"
+
 // Integer TODO
 func Integer(max int) chan int {
 
@@ -79,12 +81,15 @@ func Take(shutdown <-chan int, input <-chan int, size int) <-chan int {
 
 	go func() {
 		defer close(out)
+		defer fmt.Println("Exiting Take goroutine")
 
 		for i := 0; i < size; i++ {
 			select {
 			case <-shutdown:
+				fmt.Println("Shutdown channel activated")
 				return
 			case num := <-input:
+				fmt.Println("Blocked at num ", num)
 				out <- num
 			}
 		}
