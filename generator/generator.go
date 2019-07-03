@@ -90,7 +90,12 @@ func Take(shutdown <-chan int, input <-chan int, size int) <-chan int {
 				return
 			case num := <-input:
 				fmt.Println("Blocked at num ", num)
-				out <- num
+				select {
+				case <-shutdown:
+					fmt.Println("Shutdown channel activated from nested select")
+					return
+				case out <- num:
+				}
 			}
 		}
 
