@@ -153,6 +153,35 @@ func OrShutdown(inputs ...<-chan int) <-chan int {
 }
 
 /*
+AndShutdown combines multiple signalling channels and returns a
+single signalling channel (The output channel is closed when all
+of the input signalling channels are closed)
+*/
+func AndShutdown(inputs ...<-chan int) <-chan int {
+	out := make(chan int)
+
+	var syncGoroutines sync.WaitGroup
+
+	for _, inputChan := range inputs {
+
+		syncGoroutines.Add(1)
+
+		go func(inputChan <-chan int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			<-inputChan
+		}(inputChan, &syncGoroutines)
+
+	}
+
+	go func(wg *sync.WaitGroup) {
+		wg.Wait()
+		close(out)
+	}(&syncGoroutines)
+
+	return out
+}
+
+/*
 Pool TODO
 */
 func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int) int) <-chan int {
