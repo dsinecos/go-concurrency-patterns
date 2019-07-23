@@ -219,14 +219,16 @@ func AndShutdown(inputs ...<-chan int) <-chan int {
 	return out
 }
 
-/*
-Pool TODO
-*/
+// Pool invokes multiple goroutines to process values on the input channel concurrently
 func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int) int) <-chan int {
 	out := make(chan int)
 
+	// WaitGroup initialized to synchronize closing all the goroutines once the input
+	// channel is closed
 	var syncGoroutine sync.WaitGroup
 
+	// Spawn 'poolSize' goroutines where each goroutine reads from the input channel
+	// runs the 'process' function on the value and publishes result to the output channel
 	for i := 0; i < poolSize; i++ {
 
 		syncGoroutine.Add(1)
@@ -235,13 +237,19 @@ func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int)
 			defer wg.Done()
 
 			for {
+				// Select-Case used to allow to close the goroutine if the 'shutdown' channel is closed
 				select {
 				case <-shutdown:
 					return
 				case num, ok := <-inputChan:
+					// To allow the goroutine to exit when the input channel is closed
 					if !ok {
 						return
 					}
+					// The following select-case block covers the case where value was read from the input channel
+					// and while the goroutine was waiting to write on the output channel, 'shutdown' channel was
+					// closed. Without the following select-case block, the goroutine would attempt to write to
+					// the output channel despite the 'shutdown' channel being signalled to close
 					select {
 					case <-shutdown:
 						return
@@ -254,6 +262,8 @@ func Pool(shutdown <-chan int, input <-chan int, poolSize int, process func(int)
 
 	}
 
+	// The following goroutine closes the output channel once all the goroutines reading from the input
+	// channel have exited
 	go func(wg *sync.WaitGroup) {
 		syncGoroutine.Wait()
 		close(out)
