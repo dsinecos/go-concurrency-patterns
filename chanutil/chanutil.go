@@ -159,22 +159,23 @@ func Pipeline(input chan int, filters ...func(task int) bool) chan int {
 	return out
 }
 
-/*
-OrShutdown combines multiple signalling channels and returns a
-single signalling channel (The output channel is closed if any
-of the input signalling channels is closed)
-*/
+// OrShutdown combines multiple signalling channels and returns a
+// single signalling channel (The output channel is closed if any
+// of the input signalling channels is closed)
 func OrShutdown(inputs ...<-chan int) <-chan int {
 	out := make(chan int)
 
+	// Goroutine creates a dynamically sized select-case statement using the reflect package.
 	go func() {
 		defer close(out)
 
 		cases := make([]reflect.SelectCase, len(inputs))
+		// For each input channel a case statement is initialized to read from the respective channel
 		for idx, inputChan := range inputs {
 			cases[idx] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(inputChan)}
 		}
 
+		// Goroutine blocks here until one of the input channels closes
 		reflect.Select(cases)
 
 	}()
