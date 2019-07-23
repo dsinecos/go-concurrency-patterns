@@ -50,26 +50,24 @@ func Merge(input ...chan int) chan int {
 	return out
 }
 
-// Split TODO
+// Split broadcasts (duplicates) input from a single channel across multiple output channels
 func Split(input chan int, outputs ...chan int) {
 
 	go func() {
 
-		/*
-			Create n WaitGroup, each corresponding to goroutines spawned for
-			a single output channel
-		*/
+		// Create n WaitGroups, each corresponding to goroutines spawned for
+		// writing to a single output channel
 		syncGoroutines := make([]sync.WaitGroup, len(outputs))
 
 		for index, outputChan := range outputs {
 			syncGoroutines[index] = sync.WaitGroup{}
+
+			// Waitgroup incremented to account for when the input channel closes
 			syncGoroutines[index].Add(1)
 
-			/*
-				The following goroutine monitors if all the goroutines spawned to publish
-				to the respective output channel have closed using 'wg' and the 'input'
-				channel has been closed, to close the 'output' channel
-			*/
+			// The following goroutine monitors if all the goroutines spawned to publish
+			// to the respective output channel have closed using 'wg' and the 'input'
+			// channel has been closed, to close the 'output' channel
 			go func(outputChan chan int, wg *sync.WaitGroup) {
 				wg.Wait()
 				close(outputChan)
@@ -77,9 +75,14 @@ func Split(input chan int, outputs ...chan int) {
 
 		}
 
+		// Range over the input channel. Spawn a goroutine for each output channel each time a value
+		// is read from the input channel.
 		for inputVal := range input {
 			for index, outputChan := range outputs {
 
+				// Increment the waitgroup for the assigned output channel to account
+				// for the goroutine that will be launched to write the present value
+				// to the output channel
 				syncGoroutines[index].Add(1)
 
 				go func(inputVal int, outputChan chan int, wg *sync.WaitGroup) {
@@ -90,11 +93,11 @@ func Split(input chan int, outputs ...chan int) {
 			}
 		}
 
-		/*
-			Since the earlier for-range loop is blocking and will only release
-			once the 'input' channel is closed. We can define code here to be
-			executed once the 'input' channel is closed
-		*/
+		// Since the earlier for-range loop is blocking and will only release
+		// once the 'input' channel is closed. We can define code here to be
+		// executed once the 'input' channel is closed
+		// Range over n Waitgroups and signal their end since the input channel
+		// is closed
 		for index := range syncGoroutines {
 			syncGoroutines[index].Done()
 		}
