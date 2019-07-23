@@ -183,28 +183,35 @@ func OrShutdown(inputs ...<-chan int) <-chan int {
 	return out
 }
 
-/*
-AndShutdown combines multiple signalling channels and returns a
-single signalling channel (The output channel is closed when all
-of the input signalling channels are closed)
-*/
+// AndShutdown combines multiple signalling channels and returns a
+// single signalling channel (The output channel is closed when all
+// of the input signalling channels are closed)
 func AndShutdown(inputs ...<-chan int) <-chan int {
 	out := make(chan int)
 
+	// WaitGroup is used to synchronize closing the output channel when
+	// all the input channels are closed
 	var syncGoroutines sync.WaitGroup
 
+	// For each input channel, a goroutine is spawned. When the input channel
+	// closes, the goroutine decrements the WaitGroup and exits
 	for _, inputChan := range inputs {
 
+		// Increment WaitGroup for each goroutine launched
 		syncGoroutines.Add(1)
 
 		go func(inputChan <-chan int, wg *sync.WaitGroup) {
 			defer wg.Done()
+			// Goroutine blocks here until the input channel closes
 			<-inputChan
 		}(inputChan, &syncGoroutines)
 
 	}
 
+	// Goroutine monitors when all the input channels are closed (signalled by respective
+	// goroutines spawned from the for loop).
 	go func(wg *sync.WaitGroup) {
+		// Blocks until all goroutines spawned to monitor individual channels exit
 		wg.Wait()
 		close(out)
 	}(&syncGoroutines)
