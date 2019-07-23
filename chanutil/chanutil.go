@@ -105,15 +105,21 @@ func Split(input chan int, outputs ...chan int) {
 	}()
 }
 
-// SplitRnd TODO
+// SplitRnd distributes input from a single channel across multiple output channels randomly
 func SplitRnd(input chan int, outputs ...chan int) {
 
+	// Spawn a goroutine for each output channel. The goroutine
+	// is responsible for reading from the input channel and writing
+	// to the output channel
 	for _, outputChan := range outputs {
 
+		// Takes output channel as an argument and not via closures to avoid
+		// data race conditions
 		go func(outputChan chan int) {
-
+			// Close the output channel once the input channel is closed
 			defer close(outputChan)
 
+			// Blocks and runs until the input channel is closed
 			for num := range input {
 				outputChan <- num
 			}
