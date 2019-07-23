@@ -80,3 +80,50 @@ func TestPipeline(t *testing.T) {
 		}
 	}
 }
+
+func TestOrShutdown(t *testing.T) {
+	t.Log("Testing OrShutdown")
+	{
+		t.Log("\t Closes output channel if any of the input channels are closed")
+		{
+		}
+
+		t.Log("\t Does not allow to write on the output channel")
+		{
+		}
+
+	}
+}
+
+func TestAndShutdown(t *testing.T) {
+	t.Log("Testing AndShutdown")
+	{
+		t.Log("\t Closes output channel when all of the input channels are closed")
+		{
+		}
+		t.Log("\t Does not allow to write on the output channel")
+		{
+		}
+	}
+}
+
+func TestPool(t *testing.T) {
+	t.Log("Testing Pool")
+	{
+		t.Log("\t Spawns 'poolSize' goroutines to process values read from the input channel")
+		{
+		}
+
+		t.Log("\t Closes output channel when 'shutdown' channel is closed")
+		{
+		}
+
+		t.Log("\t Exits all worker goroutines when 'shutdown' channel is invoked")
+		{
+		}
+
+		t.Log("\t Closes output channel when input channel is closed")
+		{
+		}
+	}
+}
