@@ -129,15 +129,19 @@ func SplitRnd(input chan int, outputs ...chan int) {
 
 }
 
-// Pipeline TODO
+// Pipeline recursively creates a multi-stage asynchronous pipeline to filter values from the input channel in order of the functions provided and publish qualifying values to the output channel
 func Pipeline(input chan int, filters ...func(task int) bool) chan int {
 
 	out := make(chan int)
 
 	filter := filters[0]
 
+	// Goroutine creates a stage of the pipeline using a filter function and
+	// an output channel
 	go func(out chan int, filter func(task int) bool) {
+		// Closes the output channel once the goroutine exits
 		defer close(out)
+		// Blocks and reads from the input channel until it is closed
 		for value := range input {
 			if filter(value) {
 				out <- value
@@ -145,11 +149,13 @@ func Pipeline(input chan int, filters ...func(task int) bool) chan int {
 		}
 	}(out, filter)
 
+	// If there are more than one filter functions, Pipeline is invoked recursively
 	if len(filters) != 1 {
 		filters = filters[1:]
 		return Pipeline(out, filters...)
 	}
 
+	// If there is only a single filter function, output channel is returned
 	return out
 }
 
