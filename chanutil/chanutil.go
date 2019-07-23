@@ -5,29 +5,44 @@ import (
 	"sync"
 )
 
-// Merge TODO
+// Merge combines input from multiple channels into a single channel
 func Merge(input ...chan int) chan int {
 
 	out := make(chan int)
+	// To synchronize closing the output channel when all input channels
+	// are closed
 	var shutdownSignal sync.WaitGroup
 
+	// For each input channel a goroutine is launched which reads from the
+	// input channel and publishes to the output channel
 	for _, inputChan := range input {
 
+		// Waitgroup is incremented for each goroutine launched (to read from assigned input channel)
 		shutdownSignal.Add(1)
+
+		// Goroutine reads from assigned input channel and writes to output channel.
+		// Goroutine takes channel as an argument instead of accessing via closures to avoid
+		// data race conditions, since goroutine is launched from within a for loop
+		// [Refer for race conditions inside for loops in Go](https://dsinecos.github.io/blog/Asynchronous-execution-inside-for-loops)
 		go func(inputChan chan int) {
+			// Decrement the Waitgroup once goroutine exits
 			defer shutdownSignal.Done()
+
+			// Block execution of the goroutine.
+			// Read from the assigned input channel.
+			// Write to the output channel
 			for num := range inputChan {
 				out <- num
 			}
 		}(inputChan)
 	}
 
-	/*
-		A goroutine will be responsible for monitoring when all upstream
-		channels. When all the upstream channels are closed, it'll signal
-		the downstream channel
-	*/
+	// A goroutine monitors when all upstream channels close.
+	// When all the upstream channels are closed, it'll close
+	// the downstream channel
 	go func() {
+		// Block until all the goroutines launched to read from input channels have
+		// been closed
 		shutdownSignal.Wait()
 		close(out)
 	}()
