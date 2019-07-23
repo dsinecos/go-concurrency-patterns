@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>chanutil.go</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>chanutil.go</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">package</span> chanutil
+
+<span class="hljs-keyword">import</span> (
+	<span class="hljs-string">"reflect"</span>
+	<span class="hljs-string">"sync"</span>
+)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Merge combines input from multiple channels into a single channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Merge</span><span class="hljs-params">(input ...<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> {
+
+	out := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>To synchronize closing the output channel when all input channels
+are closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">var</span> shutdownSignal sync.WaitGroup</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>For each input channel a goroutine is launched which reads from the
+input channel and publishes to the output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">for</span> _, inputChan := <span class="hljs-keyword">range</span> input {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>Waitgroup is incremented for each goroutine launched (to read from assigned input channel)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		shutdownSignal.Add(<span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Goroutine reads from assigned input channel and writes to output channel.
+Goroutine takes channel as an argument instead of accessing via closures to avoid
+data race conditions, since goroutine is launched from within a for loop
+<a href="https://dsinecos.github.io/blog/Asynchronous-execution-inside-for-loops">Refer for race conditions inside for loops in Go</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(inputChan <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span></span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Decrement the Waitgroup once goroutine exits</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">defer</span> shutdownSignal.Done()</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Block execution of the goroutine.
+Read from the assigned input channel.
+Write to the output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">for</span> num := <span class="hljs-keyword">range</span> inputChan {
+				out &lt;- num
+			}
+		}(inputChan)
+	}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>A goroutine monitors when all upstream channels close.
+When all the upstream channels are closed, it’ll close
+the downstream channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Block until all the goroutines launched to read from input channels have
+been closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		shutdownSignal.Wait()
+		<span class="hljs-built_in">close</span>(out)
+	}()
+
+	<span class="hljs-keyword">return</span> out
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>Split broadcasts (duplicates) input from a single channel across multiple output channels</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Split</span><span class="hljs-params">(input <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, outputs ...<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span></span> {
+
+	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>Create n WaitGroups, each corresponding to goroutines spawned for
+writing to a single output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		syncGoroutines := <span class="hljs-built_in">make</span>([]sync.WaitGroup, <span class="hljs-built_in">len</span>(outputs))
+
+		<span class="hljs-keyword">for</span> index, outputChan := <span class="hljs-keyword">range</span> outputs {
+			syncGoroutines[index] = sync.WaitGroup{}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>Waitgroup incremented to account for when the input channel closes</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			syncGoroutines[index].Add(<span class="hljs-number">1</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>The following goroutine monitors if all the goroutines spawned to publish
+to the respective output channel have closed using ‘wg’ and the ‘input’
+channel has been closed, to close the ‘output’ channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(outputChan <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, wg *sync.WaitGroup)</span></span> {
+				wg.Wait()
+				<span class="hljs-built_in">close</span>(outputChan)
+			}(outputChan, &amp;syncGoroutines[index])
+
+		}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Range over the input channel. Spawn a goroutine for each output channel each time a value
+is read from the input channel.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">for</span> inputVal := <span class="hljs-keyword">range</span> input {
+			<span class="hljs-keyword">for</span> index, outputChan := <span class="hljs-keyword">range</span> outputs {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>Increment the waitgroup for the assigned output channel to account
+for the goroutine that will be launched to write the present value
+to the output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				syncGoroutines[index].Add(<span class="hljs-number">1</span>)
+
+				<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(inputVal <span class="hljs-keyword">int</span>, outputChan <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, wg *sync.WaitGroup)</span></span> {
+					outputChan &lt;- inputVal
+					wg.Done()
+				}(inputVal, outputChan, &amp;syncGoroutines[index])
+
+			}
+		}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>Since the earlier for-range loop is blocking and will only release
+once the ‘input’ channel is closed. We can define code here to be
+executed once the ‘input’ channel is closed
+Range over n Waitgroups and signal their end since the input channel
+is closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">for</span> index := <span class="hljs-keyword">range</span> syncGoroutines {
+			syncGoroutines[index].Done()
+		}
+
+	}()
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>SplitRnd distributes input from a single channel across multiple output channels randomly</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">SplitRnd</span><span class="hljs-params">(input <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, outputs ...<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span></span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Spawn a goroutine for each output channel. The goroutine
+is responsible for reading from the input channel and writing
+to the output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">for</span> _, outputChan := <span class="hljs-keyword">range</span> outputs {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>Takes output channel as an argument and not via closures to avoid
+data race conditions</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(outputChan <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span></span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>Close the output channel once the input channel is closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">defer</span> <span class="hljs-built_in">close</span>(outputChan)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>Blocks and runs until the input channel is closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">for</span> num := <span class="hljs-keyword">range</span> input {
+				outputChan &lt;- num
+			}
+
+		}(outputChan)
+	}
+
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>Pipeline recursively creates a multi-stage asynchronous pipeline to filter values from the input channel in order of the functions provided and publish qualifying values to the output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Pipeline</span><span class="hljs-params">(input <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, filters ...<span class="hljs-keyword">func</span>(task <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">bool</span>) <span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> {
+
+	out := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)
+
+	filter := filters[<span class="hljs-number">0</span>]</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Goroutine creates a stage of the pipeline using a filter function and
+an output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(out <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, filter <span class="hljs-keyword">func</span>(task <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">bool</span>)</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>Closes the output channel once the goroutine exits</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">defer</span> <span class="hljs-built_in">close</span>(out)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>Blocks and reads from the input channel until it is closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">for</span> value := <span class="hljs-keyword">range</span> input {
+			<span class="hljs-keyword">if</span> filter(value) {
+				out &lt;- value
+			}
+		}
+	}(out, filter)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>If there are more than one filter functions, Pipeline is invoked recursively</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(filters) != <span class="hljs-number">1</span> {
+		filters = filters[<span class="hljs-number">1</span>:]
+		<span class="hljs-keyword">return</span> Pipeline(out, filters...)
+	}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>If there is only a single filter function, output channel is returned</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">return</span> out
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>OrShutdown combines multiple signalling channels and returns a
+single signalling channel (The output channel is closed if any
+of the input signalling channels is closed)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">OrShutdown</span><span class="hljs-params">(inputs ...&lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span> &lt;-<span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> {
+	out := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>Goroutine creates a dynamically sized select-case statement using the reflect package.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> {
+		<span class="hljs-keyword">defer</span> <span class="hljs-built_in">close</span>(out)
+
+		cases := <span class="hljs-built_in">make</span>([]reflect.SelectCase, <span class="hljs-built_in">len</span>(inputs))</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>For each input channel a case statement is initialized to read from the respective channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">for</span> idx, inputChan := <span class="hljs-keyword">range</span> inputs {
+			cases[idx] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(inputChan)}
+		}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>Goroutine blocks here until one of the input channels closes</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		reflect.Select(cases)
+
+	}()
+
+	<span class="hljs-keyword">return</span> out
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p>AndShutdown combines multiple signalling channels and returns a
+single signalling channel (The output channel is closed when all
+of the input signalling channels are closed)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">AndShutdown</span><span class="hljs-params">(inputs ...&lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span> &lt;-<span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> {
+	out := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>WaitGroup is used to synchronize closing the output channel when
+all the input channels are closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">var</span> syncGoroutines sync.WaitGroup</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>For each input channel, a goroutine is spawned. When the input channel
+closes, the goroutine decrements the WaitGroup and exits</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">for</span> _, inputChan := <span class="hljs-keyword">range</span> inputs {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>Increment WaitGroup for each goroutine launched</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		syncGoroutines.Add(<span class="hljs-number">1</span>)
+
+		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(inputChan &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, wg *sync.WaitGroup)</span></span> {
+			<span class="hljs-keyword">defer</span> wg.Done()</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>Goroutine blocks here until the input channel closes</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			&lt;-inputChan
+		}(inputChan, &amp;syncGoroutines)
+
+	}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>Goroutine monitors when all the input channels are closed (signalled by respective
+goroutines spawned from the for loop).</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(wg *sync.WaitGroup)</span></span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>Blocks until all goroutines spawned to monitor individual channels exit</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		wg.Wait()
+		<span class="hljs-built_in">close</span>(out)
+	}(&amp;syncGoroutines)
+
+	<span class="hljs-keyword">return</span> out
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>Pool invokes multiple goroutines to process values on the input channel concurrently</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Pool</span><span class="hljs-params">(shutdown &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, input &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, poolSize <span class="hljs-keyword">int</span>, process <span class="hljs-keyword">func</span>(<span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span>) &lt;-<span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> {
+	out := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>WaitGroup initialized to synchronize closing all the goroutines once the input
+channel is closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">var</span> syncGoroutine sync.WaitGroup</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>Spawn ‘poolSize’ goroutines where each goroutine reads from the input channel
+runs the ‘process’ function on the value and publishes result to the output channel</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; poolSize; i++ {
+
+		syncGoroutine.Add(<span class="hljs-number">1</span>)
+
+		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(shutdown &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, inputChan &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, wg *sync.WaitGroup)</span></span> {
+			<span class="hljs-keyword">defer</span> wg.Done()
+
+			<span class="hljs-keyword">for</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>Select-Case used to allow to close the goroutine if the ‘shutdown’ channel is closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				<span class="hljs-keyword">select</span> {
+				<span class="hljs-keyword">case</span> &lt;-shutdown:
+					<span class="hljs-keyword">return</span>
+				<span class="hljs-keyword">case</span> num, ok := &lt;-inputChan:</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <p>To allow the goroutine to exit when the input channel is closed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>					<span class="hljs-keyword">if</span> !ok {
+						<span class="hljs-keyword">return</span>
+					}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p>The following select-case block covers the case where value was read from the input channel
+and while the goroutine was waiting to write on the output channel, ‘shutdown’ channel was
+closed. Without the following select-case block, the goroutine would attempt to write to
+the output channel despite the ‘shutdown’ channel being signalled to close</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>					<span class="hljs-keyword">select</span> {
+					<span class="hljs-keyword">case</span> &lt;-shutdown:
+						<span class="hljs-keyword">return</span>
+					<span class="hljs-keyword">case</span> out &lt;- process(num):
+					}
+				}
+			}
+
+		}(shutdown, input, &amp;syncGoroutine)
+
+	}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <p>The following goroutine closes the output channel once all the goroutines reading from the input
+channel have exited</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(wg *sync.WaitGroup)</span></span> {
+		syncGoroutine.Wait()
+		<span class="hljs-built_in">close</span>(out)
+	}(&amp;syncGoroutine)
+
+	<span class="hljs-keyword">return</span> out
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
