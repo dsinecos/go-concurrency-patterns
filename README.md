@@ -69,6 +69,8 @@ _There is a potential for Goroutine leaks if the output channels returned from p
     1.  Completed - To `chanutil` pkg using `docco` [Website](http://ashkenas.com/docco/)
     2.  Completed - Add steps to generate documentation in `Readme.md` using `docco`
     3.  Add a script to automate documentation generation and following steps
+    4.  Configure netlify and sub-domain for documentation
+    5.  Add documentation link to README
 
 8. Write tests for the `chanutil` pkg
 
