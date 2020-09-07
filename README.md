@@ -67,8 +67,25 @@ _There is a potential for Goroutine leaks if the output channels returned from p
 
 7. Add documentation
     1.  Completed - To `chanutil` pkg using `docco` [Website](http://ashkenas.com/docco/)
-    2.  Add steps to generate documentation in `Readme.md` using `docco`
+    2.  Completed - Add steps to generate documentation in `Readme.md` using `docco`
+    3.  Add a script to automate documentation generation and following steps
 
 8. Write tests for the `chanutil` pkg
 
+## Steps to update Documentation
 
+At project root run
+
+`docco ./chanutil/chanutil.go`
+
+This will create the documentation using comments in the source code and publish to `./docs` folder.
+
+To allow netlify to host the site make the following changes
+
+1. Move `./docs/chanutil/chanutil.html` to `./docs/chanutil.html`
+
+2. Rename `./docs/chanutil.html` to `./docs/index.html`
+
+3. Open `./docs/index.html` and update file location for loading CSS
+
+4. Commit the changes and push to github
