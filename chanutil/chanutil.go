@@ -1,3 +1,4 @@
+// Package chanutil implements multiple concurrency patterns using goroutines and channels
 package chanutil
 
 import (
